@@ -8,7 +8,7 @@ const addTodos = async (req, res) => {
   //upload image to cloudinary if found
   if (req.file) {
     try {
-      image = await imageUploader(req.file);
+      image = await imageUploader(req.file);  
       fs.unlinkSync(req.file.path);
     } catch (error) {
       res.send({ message: "error in uploading image! try again" });

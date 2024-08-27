@@ -2,6 +2,7 @@ import { secretKey } from "../index.js";
 import imageUploader from "../utils/fileUploader.js";
 import { client } from "../utils/postgres.config.js";
 import jwt from "jsonwebtoken";
+import mailSender from "../utils/mail.js";
 import fs from "fs";
 
 const login = async (req, res) => {
@@ -35,7 +36,7 @@ const login = async (req, res) => {
 };
 
 const register = async (req, res) => {
-  const { name, username, password } = req.body;
+  const { name, username, password,mail } = req.body;
   let profilePicture;
   //check if profile picture send by user or not and create a user with or without profile picture
   if (req.file) {
@@ -58,15 +59,18 @@ const register = async (req, res) => {
       try {
         //if username does not already exists create a new one
         await client.query(
-          "INSERT INTO users (name,username,password,profilepicture) VALUES ($1,$2,$3,$4)",
-          [name, username, password, profilePicture]
+          "INSERT INTO users (name,username,password,profilepicture,email) VALUES ($1,$2,$3,$4,$5)",
+          [name, username, password, profilePicture,mail]
         );
+        mailSender(mail)
         res.send({ message: "user registered successfully" });
       } catch (error) {
+        console.log(error)
         res.send({ message: "error in registration of new user" });
       }
     }
   } catch (error) {
+    console.log(error)
     res.send({ message: "could not validate and register user.try again!" });
   }
 };
