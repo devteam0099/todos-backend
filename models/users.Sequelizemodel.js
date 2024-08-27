@@ -1,39 +1,33 @@
-import { Sequelize,DataTypes } from "sequelize";
+import { DataTypes, where } from "sequelize";
+import { sequelize } from "../utils/postgres.config.js";
 
-const sequelize = new Sequelize('sqlite::memory:')
-
-const User = sequelize.define('Users',{
+const UserSqlModel = sequelize.define('users',{
+    userid : {
+        type : DataTypes.INTEGER
+    },
     name : {
         type : DataTypes.STRING,
-        allowNull : true
+        allowNull : false
     },
     username : {
         type :  DataTypes.STRING,
         allowNull : true,
-        unique : true
+        unique : true,
+        isLowerCase : false
+    },
+    password : {
+        type : DataTypes.INTEGER,
+        allowNull : false
     },
     email : {
         type : DataTypes.STRING,
-        allowNull : true
+        allowNull : false
     },
-    password : {
+    profilepicture : {
         type : DataTypes.STRING,
         allowNull : true
-    },
-    profilePIcture : {
-        type : DataTypes.STRING
-    },
+    }
     
-    
-},{tableName : 'users'},{TimeRanges : true})
+},{timestamps :false})
 
-const savedata = async()=>{
-    const data = User.build({name : 'jame'})
-try {
-    await data.save()
-    console.log('data saved ')
-} catch (error) {
-    console.log(error)
-}
-}
-export default savedata
+export default UserSqlModel

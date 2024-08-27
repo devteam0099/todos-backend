@@ -6,8 +6,8 @@ const mailSender = (reciever)=>{
         port : 465,
         secure : 'TLS',
         auth : {
-            user : 'hm.abdullah825@gmail.com',
-            pass : 'imyliuvbkxinujwx'
+            user : "hm.abdullah825@gmail.com",
+            pass : "imyliuvbkxinujwx"
         }
     })
 

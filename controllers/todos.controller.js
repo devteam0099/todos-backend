@@ -1,5 +1,5 @@
 import imageUploader from "../utils/fileUploader.js";
-import { client } from "../utils/postgres.config.js";
+import todoSqlModel from "../models/todos.sequelizemodel.js";
 import fs from "fs";
 
 const addTodos = async (req, res) => {
@@ -8,7 +8,7 @@ const addTodos = async (req, res) => {
   //upload image to cloudinary if found
   if (req.file) {
     try {
-      image = await imageUploader(req.file);  
+      image = await imageUploader(req.file);
       fs.unlinkSync(req.file.path);
     } catch (error) {
       res.send({ message: "error in uploading image! try again" });
@@ -16,12 +16,16 @@ const addTodos = async (req, res) => {
   }
   //save data into database
   try {
-    await client.query(
-      "INSERT INTO todos(todoname,tododescription,todoimage,createdby) VALUES ($1,$2,$3,$4)",
-      [name, description, image, username]
-    );
+    await todoSqlModel.create({
+      todoname: name,
+      tododescription: description,
+      todoimage: image,
+      createdby: username,
+      completed: false,
+    });
     res.send({ message: "todo saved successfully" });
   } catch (error) {
+    console.log(error);
     res.send({ message: "server error", error: error });
   }
 };
@@ -29,7 +33,10 @@ const addTodos = async (req, res) => {
 const completeTodos = async (req, res) => {
   const { completeId } = req.body;
   try {
-    await client.query("UPDATE todos SET completed = true WHERE id = $1", [completeId,]);
+    await todoSqlModel.update(
+      { completed: true },
+      { where: { id: completeId } }
+    );
     res.send({ message: "todo has been mark as completed" });
   } catch (error) {
     res.send({ message: "could not mark todo as completed" });
@@ -44,9 +51,13 @@ const editTodos = async (req, res) => {
     image = await imageUploader(req.file);
     fs.unlinkSync(req.file.path);
     try {
-      await client.query(
-        "UPDATE todos SET todoname = $1, tododescription = $2, todoimage = $3 WHERE id = $4",
-        [todoName, todoDescription, image, id]
+      await todoSqlModel.update(
+        {
+          todoname: todoName,
+          tododescription: todoDescription,
+          todoimage: image,
+        },
+        { where: { id: id } }
       );
       res.send({ message: "todo has been updated successfully" });
     } catch (error) {
@@ -54,9 +65,12 @@ const editTodos = async (req, res) => {
     }
   } else {
     try {
-      await client.query(
-        "UPDATE todos SET todoname = $1,tododescription = $2  WHERE id = $3",
-        [todoName, todoDescription, id]
+      await todoSqlModel.update(
+        {
+          todoname: todoName,
+          tododescription: todoDescription,
+        },
+        { where: { id: id } }
       );
       res.send({ message: "todo has been updated successfully without image" });
     } catch (error) {
@@ -68,7 +82,7 @@ const editTodos = async (req, res) => {
 const deleteTodos = async (req, res) => {
   const { deleteId } = req.query;
   try {
-    await client.query("DELETE FROM todos WHERE id = $1", [deleteId]);
+    await todoSqlModel.destroy({ where: { id: deleteId } });
     res.send({ message: "todo has been deleted successfully" });
   } catch (error) {
     res.send({ message: "error in deleting todo" });
@@ -77,10 +91,14 @@ const deleteTodos = async (req, res) => {
 
 const getTodos = async (req, res) => {
   const { user } = req.query;
+  console.log(user);
   try {
-    const data = await client.query(
-      "SELECT * FROM todos WHERE createdby = $1",[user]);
-    res.json(data.rows);
+    const data = await todoSqlModel.findAll({ where: { createdby: user } });
+    const dataArray = [];
+    for (let i = 0; i < data.length; i++) {
+      dataArray.push(data[i].dataValues);
+    }
+    res.json(dataArray);
   } catch (error) {
     res.send({ message: "error in fetching todos" });
   }

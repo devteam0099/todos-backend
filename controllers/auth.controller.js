@@ -1,25 +1,23 @@
 import { secretKey } from "../index.js";
 import imageUploader from "../utils/fileUploader.js";
-import { client } from "../utils/postgres.config.js";
 import jwt from "jsonwebtoken";
 import mailSender from "../utils/mail.js";
+import UserSqlModel from "../models/users.Sequelizemodel.js";
 import fs from "fs";
 
 const login = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const data = await client.query("SELECT * FROM users WHERE username = $1", [
-      username,
-    ]);
+    const data = await UserSqlModel.findOne({where : {username : username}})
     //if document found proceed
-    if (data.rows.length > 0) {
+    if (data) {
       //if document found check password
-      if (data.rows[0].password === parseInt(password)) {
+      if (data.dataValues.password === parseInt(password)) {
         //if password authantication successful generate a JWT token
         jwt.sign({ data }, secretKey, { expiresIn: "10h" }, (err, token) => {
           err
             ? res.send({ message: "could not send user credentials" })
-            : res.send({ token: token, user: data.rows[0] });
+            : res.send({ token: token, user: data.dataValues });
         });
       } else {
         //send response if password validation fails
@@ -45,23 +43,22 @@ const register = async (req, res) => {
   }
 
   try {
-    //check if some other user with same userame already exists.if exists send a message and create a new user if not exists
-    const existedUser = await client.query(
-      "SELECT * FROM users WHERE username = $1",
-      [username]
-    );
-    if (existedUser.rows.length > 0) {
-      console.log(existedUser.rows.length);
+    const existedUser = await UserSqlModel.findOne({where : {username : username}})
+    if (existedUser) {
+      console.log(existedUser.dataValues);
       res.send({
         message: "the user with this username already exists.try another",
       });
     } else {
       try {
-        //if username does not already exists create a new one
-        await client.query(
-          "INSERT INTO users (name,username,password,profilepicture,email) VALUES ($1,$2,$3,$4,$5)",
-          [name, username, password, profilePicture,mail]
-        );
+        await UserSqlModel.create({
+          userid : 12,
+          name : name,
+          username : username,
+          password : password,
+          profilepicture : profilePicture,
+          email : mail
+         })
         mailSender(mail)
         res.send({ message: "user registered successfully" });
       } catch (error) {
