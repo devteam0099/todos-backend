@@ -1,24 +1,25 @@
 import jwt from "jsonwebtoken";
 import { secretKey } from "../index.js";
+import { comparePass } from "../bcrypt.js";
 
-const authanticateUser = (req, res, next) => {
+const authanticateUser = async(req, res, next) => {
   const authHeaders = req.headers["authorization"];
   const { username, password } = req.body;
   //check if token in authorization found or not
   if (authHeaders) {
     //if token found take token and secret key for verification
-    jwt.verify(authHeaders, secretKey, (err, decode) => {
+    jwt.verify(authHeaders, secretKey, async(err, decode) => {
       if (err) {
         console.log("error in token. redirecting to next");
         //if error call the next function that checks and match from database
         next();
       } else {
-        console.log(decode);
+        const checkpass = await comparePass(password,decode.data.password)
         //if token validates decode it and checks if usrname in token matches the username sent by user
         if (decode.data.username === username) {
           console.log("user verified using token");
           //if username matches match the password and if password match send decoded credentials to client site
-          decode.data.password === parseInt(password)
+          checkpass
             ? res.send({ auth: decode.data })
             : res.send({ message: "incorrect password" });
         } else {

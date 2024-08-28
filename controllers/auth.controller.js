@@ -4,6 +4,8 @@ import jwt from "jsonwebtoken";
 import mailSender from "../utils/mail.js";
 import UserSqlModel from "../models/users.Sequelizemodel.js";
 import fs from "fs";
+import secure from "../bcrypt.js";
+import { comparePass } from "../bcrypt.js";
 
 const login = async (req, res) => {
   const { username, password } = req.body;
@@ -12,7 +14,8 @@ const login = async (req, res) => {
     //if document found proceed
     if (data) {
       //if document found check password
-      if (data.dataValues.password === parseInt(password)) {
+      const checkpass = comparePass(password,data.dataValues.password)
+      if (checkpass) {
         //if password authantication successful generate a JWT token
         jwt.sign({ data }, secretKey, { expiresIn: "10h" }, (err, token) => {
           err
@@ -51,16 +54,22 @@ const register = async (req, res) => {
       });
     } else {
       try {
-        await UserSqlModel.create({
-          userid : 12,
-          name : name,
-          username : username,
-          password : password,
-          profilepicture : profilePicture,
-          email : mail
-         })
-        mailSender(mail)
-        res.send({ message: "user registered successfully" });
+        const pass = await secure(password)
+        console.log(typeof pass,pass)
+        if (!pass) {
+          res.send({message : 'error in password encoding'})
+        }else{
+          await UserSqlModel.create({
+            userid : 12,
+            name : name,
+            username : username,
+            password : pass,
+            profilepicture : profilePicture,
+            email : mail
+           })
+          mailSender(mail)
+          res.send({ message: "user registered successfully" });
+        }
       } catch (error) {
         console.log(error)
         res.send({ message: "error in registration of new user" });

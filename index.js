@@ -19,7 +19,7 @@ app.use(urlencoded({ extended: true }));
 // config and connections
 cloudinayConfig();
 postgresConn()
-
+ 
 // routing
 app.use("/api/signup", auth);
 app.use("/api/login", auth);
